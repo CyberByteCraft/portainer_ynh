@@ -8,7 +8,7 @@
 options="-p $port:9000 -v ${data_path}/data:/data -v /var/run/docker.sock:/var/run/docker.sock"
 containeroptions=""
 
-iptables -t filter -N DOCKER
+#iptables -t filter -N DOCKER
 
 docker run -d --name=$app --restart always $options $image $containeroptions  1>&2
 CR=$?
