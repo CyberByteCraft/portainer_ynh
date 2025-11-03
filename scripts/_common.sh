@@ -67,6 +67,23 @@ dockerapp_ynh_findreplace () {
 	done
 }
 
+dockerapp_ynh_prepare_iptables () {
+	if ! command -v iptables >/dev/null 2>&1; then
+		ynh_print_warn "iptables command not found, skipping Docker chain preparation."
+		return
+	fi
+
+	if ! iptables -t nat -nL DOCKER >/dev/null 2>&1; then
+		ynh_print_info "Creating missing iptables DOCKER chain for Docker port publishing."
+		iptables -t nat -N DOCKER >/dev/null 2>&1 || true
+	fi
+
+	if ! iptables -t filter -nL DOCKER-USER >/dev/null 2>&1; then
+		iptables -t filter -N DOCKER-USER >/dev/null 2>&1 || true
+		iptables -t filter -C DOCKER-USER -j RETURN >/dev/null 2>&1 || iptables -t filter -A DOCKER-USER -j RETURN >/dev/null 2>&1
+	fi
+}
+
 dockerapp_ynh_findreplacepath () {
 	dockerapp_ynh_findreplace ../conf/. "$1" "$2"
 }
@@ -102,12 +119,19 @@ dockerapp_ynh_run () {
 	[ "$architecture" == "armhf" ] && image=portainer/portainer-ce:linux-arm-${portainer_version}
 	[ -z $image ] && ynh_die "Sorry, your ${architecture} architecture is not supported ..."
 
-	options="-p 127.0.0.1:$port:9000 -v ${data_path}/data:/data -v /var/run/docker.sock:/var/run/docker.sock"
-	containeroptions=""
+	local volume_options="-v ${data_path}/data:/data -v /var/run/docker.sock:/var/run/docker.sock"
+	local docker_options="-p 127.0.0.1:$port:9000 $volume_options"
 
-	# iptables -t filter -N DOCKER
+	dockerapp_ynh_prepare_iptables
 
-	docker run -d --name=$app --restart always $options $image $containeroptions
+	local run_output
+	if ! run_output=$(docker run -d --name=$app --restart always $docker_options $image 2>&1); then
+		ynh_die "Docker failed to start the Portainer container: $run_output"
+	fi
+
+	ynh_app_setting_delete --app=$app --key=network_mode >/dev/null 2>&1 || true
+
+	echo "$run_output"
 }
 
 # docker rm
