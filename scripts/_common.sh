@@ -119,19 +119,44 @@ dockerapp_ynh_run () {
 	[ "$architecture" == "armhf" ] && image=portainer/portainer-ce:linux-arm-${portainer_version}
 	[ -z $image ] && ynh_die "Sorry, your ${architecture} architecture is not supported ..."
 
-	local volume_options="-v ${data_path}/data:/data -v /var/run/docker.sock:/var/run/docker.sock"
-	local docker_options="-p 127.0.0.1:$port:9000 $volume_options"
+        local network_mode=$(ynh_app_setting_get --app=$app --key=network_mode)
+        local volume_options="-v ${data_path}/data:/data -v /var/run/docker.sock:/var/run/docker.sock"
+        local port_option
+        containeroptions=""
 
-	dockerapp_ynh_prepare_iptables
+        if [ "$network_mode" = "host" ]; then
+                port_option="--network host"
+                containeroptions="--bind 127.0.0.1:$port"
+        else
+                port_option="-p 127.0.0.1:$port:9000"
+        fi
 
-	local run_output
-	if ! run_output=$(docker run -d --name=$app --restart always $docker_options $image 2>&1); then
-		ynh_die "Docker failed to start the Portainer container: $run_output"
-	fi
+        local docker_options="$port_option $volume_options"
 
-	ynh_app_setting_delete --app=$app --key=network_mode >/dev/null 2>&1 || true
+        # iptables -t filter -N DOCKER
 
-	echo "$run_output"
+        local run_output
+        if ! run_output=$(docker run -d --name=$app --restart always $docker_options $image $containeroptions 2>&1); then
+                if echo "$run_output" | grep -qiE 'iptables|No chain/target/match by that name|external connectivity'; then
+                        ynh_print_warn "Docker failed to publish the port (likely due to missing iptables capabilities). Falling back to host network mode."
+                        docker rm -f "$app" >/dev/null 2>&1 || true
+                        port_option="--network host"
+                        docker_options="$port_option $volume_options"
+                        containeroptions="--bind 127.0.0.1:$port"
+                        run_output=$(docker run -d --name=$app --restart always $docker_options $image $containeroptions 2>&1) || ynh_die "Portainer failed to start even in host network mode."
+                        ynh_app_setting_set --app=$app --key=network_mode --value=host
+                else
+                        ynh_die "Docker failed to start the Portainer container: $run_output"
+                fi
+        fi
+
+        if [ "$port_option" = "--network host" ]; then
+                ynh_app_setting_set --app=$app --key=network_mode --value=host
+        else
+                ynh_app_setting_set --app=$app --key=network_mode --value=bridge
+        fi
+
+        echo "$run_output"
 }
 
 # docker rm
