@@ -107,7 +107,7 @@ dockerapp_ynh_run () {
 
 	# iptables -t filter -N DOCKER
 
-	docker run -d --name=$app --restart always $options $image $containeroptions
+	#docker run -d --name=$app --restart always $options $image $containeroptions
 }
 
 # docker rm
