@@ -67,6 +67,23 @@ dockerapp_ynh_findreplace () {
 	done
 }
 
+dockerapp_ynh_prepare_iptables () {
+	if ! command -v iptables >/dev/null 2>&1; then
+		ynh_print_warn "iptables command not found, skipping Docker chain preparation."
+		return
+	fi
+
+	if ! iptables -t nat -nL DOCKER >/dev/null 2>&1; then
+		ynh_print_info "Creating missing iptables DOCKER chain for Docker port publishing."
+		iptables -t nat -N DOCKER >/dev/null 2>&1 || true
+	fi
+
+	if ! iptables -t filter -nL DOCKER-USER >/dev/null 2>&1; then
+		iptables -t filter -N DOCKER-USER >/dev/null 2>&1 || true
+		iptables -t filter -C DOCKER-USER -j RETURN >/dev/null 2>&1 || iptables -t filter -A DOCKER-USER -j RETURN >/dev/null 2>&1
+	fi
+}
+
 dockerapp_ynh_findreplacepath () {
 	dockerapp_ynh_findreplace ../conf/. "$1" "$2"
 }
