@@ -106,7 +106,13 @@ dockerapp_ynh_run () {
 
 	options="-p $port:9000 -v ${data_path}/data:/data -v /var/run/docker.sock:/var/run/docker.sock"
 	
-	iptables -t filter -N DOCKER
+		# Check if the DOCKER chain exists in the filter table
+	if ! iptables -t filter -L DOCKER -n &>/dev/null; then
+	    echo "Creating DOCKER chain..."
+	    iptables -t filter -N DOCKER
+	else
+	    echo "DOCKER chain already exists. Skipping..."
+	fi
 	
 	### --Disabled for TESTING-- ###
 	#docker run -d --name=$app --restart always $options $image $containeroptions  1>&2
