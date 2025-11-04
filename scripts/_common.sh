@@ -119,6 +119,8 @@ dockerapp_ynh_run () {
 # docker rm
 dockerapp_ynh_rm () {
 	docker rm -f $app 2>&1 >/dev/null
+	iptables -t filter -F DOCKER
+	iptables -t filter -X DOCKER   
 }
 
 # Regenerate SSOwat conf
