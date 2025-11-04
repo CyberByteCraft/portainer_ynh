@@ -97,17 +97,23 @@ dockerapp_ynh_run () {
 	# 	[ "$ret" == "125" ] && docker inspect $app | grep "Error" | grep -q "iptables failed" && systemctl restart docker && return 0
 	# 	ynh_die "Sorry ! App cannot start with docker. Please check docker logs."
 	# fi
-	[ "$architecture" == "amd64" ] && image=portainer/portainer-ce:${portainer_version}
-	[ "$architecture" == "i386" ]  && image=portainer/portainer-ce:linux-386-${portainer_version}
-	[ "$architecture" == "armhf" ] && image=portainer/portainer-ce:linux-arm-${portainer_version}
-	[ -z $image ] && ynh_die "Sorry, your ${architecture} architecture is not supported ..."
+	
+	### --Disabled for TESTING-- ###
+	#[ "$architecture" == "amd64" ] && image=portainer/portainer-ce:${portainer_version}
+	#[ "$architecture" == "i386" ]  && image=portainer/portainer-ce:linux-386-${portainer_version}
+	#[ "$architecture" == "armhf" ] && image=portainer/portainer-ce:linux-arm-${portainer_version}
+	#[ -z $image ] && ynh_die "Sorry, your ${architecture} architecture is not supported ..."
 
 	options="-p $port:9000 -v ${data_path}/data:/data -v /var/run/docker.sock:/var/run/docker.sock"
 	containeroptions=""
 
-	# iptables -t filter -N DOCKER
-
+	iptables -t filter -N DOCKER
+	
+	### --Disabled for TESTING-- ###
 	#docker run -d --name=$app --restart always $options $image $containeroptions
+
+	### --Dev Docker run commend  !!!hardcoded!!!-- ###
+	docker run -d 9443:9000 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:lt
 }
 
 # docker rm
