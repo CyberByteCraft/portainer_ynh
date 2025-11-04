@@ -119,7 +119,7 @@ dockerapp_ynh_run () {
 	
 	
 	### --Dev Docker run commend  !!!hardcoded!!!-- ###
-	docker run -d --name portainer --restart=always $options portainer/portainer-ce:lts
+	docker run -d --name portainer --restart=always $options portainer/portainer-ce:latest
 }
 
 # docker rm
