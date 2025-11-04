@@ -105,14 +105,15 @@ dockerapp_ynh_run () {
 	#[ -z $image ] && ynh_die "Sorry, your ${architecture} architecture is not supported ..."
 
 	options="-p $port:9000 -v ${data_path}/data:/data -v /var/run/docker.sock:/var/run/docker.sock"
-
+	
 	iptables -t filter -N DOCKER
 	
 	### --Disabled for TESTING-- ###
-	#docker run -d --name=$app --restart always $options $image $containeroptions
-
+	#docker run -d --name=$app --restart always $options $image $containeroptions  1>&2
+	
+	
 	### --Dev Docker run commend  !!!hardcoded!!!-- ###
-	docker run --name portainer --restart=always $options portainer/portainer-ce:lt
+	docker run -d --name portainer --restart=always $options portainer/portainer-ce:lts
 }
 
 # docker rm
