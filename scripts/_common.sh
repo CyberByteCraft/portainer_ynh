@@ -104,7 +104,7 @@ dockerapp_ynh_run () {
 	#[ "$architecture" == "armhf" ] && image=portainer/portainer-ce:linux-arm-${portainer_version}
 	#[ -z $image ] && ynh_die "Sorry, your ${architecture} architecture is not supported ..."
 
-	options="-p $port:9000 -v ${data_path}/data:/data -v /var/run/docker.sock:/var/run/docker.sock"
+	options="-p 9443:$port -v ${data_path}/data:/data -v /var/run/docker.sock:/var/run/docker.sock"
 	
 		# Check if the DOCKER chain exists in the filter table
 	if ! iptables -t filter -L DOCKER -n &>/dev/null; then
